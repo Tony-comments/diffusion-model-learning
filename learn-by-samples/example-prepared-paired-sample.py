@@ -89,7 +89,8 @@ class Scaler(object):
 
 
 SCALER = Scaler(k=1 / (NUM_FREQ*2), b=0.5)
-
+# NUM_FREQ = 5
+# SCALER = y= 0.5 + 0.1 * x
 # %%
 
 
@@ -99,6 +100,7 @@ def generate_signal(display_flag=False):
     phis = np.random.random(NUM_FREQ) * np.pi
 
     times = np.linspace(0, T, POINTS)
+    # 均分计算得到times
 
     values = np.array([np.cos(times * freq * np.pi * 2 + phi)
                        for freq, phi in zip(available_freq, phis)])
@@ -221,7 +223,12 @@ train_diffusion_step = [j % DIFFUSION_STEPS
 
 index_vector = [j for j in range(train_data.shape[0])
                 if j % DIFFUSION_STEPS != (DIFFUSION_STEPS-1)]
-
+'''
+index_vector = 500000 - 5000 = 495000
+确保了在每个扩散周期的最后一步不被包含。
+这是为了排除扩散过程末尾可能的边界效应或噪声
+'''
+index_vector = np.array(index_vector)
 # %%
 # Define the network
 
@@ -237,6 +244,10 @@ class WeightClipper(object):
             w = w.clamp(-1, 1)
             module.weight.data = w
 
+        '''
+        它会检查该模块是否有weight属性，
+        如果有，就将其值限制在-1和1之间。
+        '''
 
 # class Net(nn.Module):
 #     def __init__(self, dimension=POINTS):
@@ -270,7 +281,11 @@ class Net(nn.Module):
         x += self.embedding(step)
         x = self.mlp2(x)
         return x
-
+'''
+用于为不同的扩散步骤生成一个
+core_size大小的embedding，这个向量与mlp1的输出相加，
+以引入当前扩散步骤的信息
+'''
 
 net = Net().cuda()
 clipper = WeightClipper()
